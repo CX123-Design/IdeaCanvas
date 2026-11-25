@@ -1,7 +1,7 @@
 {
   "name": "ideacanvas",
   "productName": "IdeaCanvas",
-  "version": "2.5.1",
+  "version": "2.5.2",
   "description": "本地文件思路画布 - 记录文件之间的创作关系",
   "main": "main.js",
   "author": "IdeaCanvas",

@@ -13,6 +13,13 @@ const U = {
     if (!s.startsWith('/')) s = '/' + s
     return 'file://' + encodeURI(s).replace(/#/g, '%23').replace(/\+/g, '%2B')
   },
+  thumbSrc (n) {
+    if (!n) return ''
+    const t = n.thumb || ''
+    // 旧版缩略图副本已移除：遇到 thumbs-v2 缓存地址直接回退到原文件
+    if (t && !/thumbs-v2/i.test(t)) return t
+    return n.path ? U.fileUrl(n.path) : ''
+  },
   fmtSize (n) {
     if (!n && n !== 0) return ''
     if (n < 1024) return n + ' B'
@@ -254,7 +261,12 @@ CC.makeDoc = function (data, path) {
   d.path = path || ''
   const rawNodes = Array.isArray(data.nodes) ? data.nodes : []
   const dropped = rawNodes.filter(n => n && (n.type === 'ai' || n.type === 'agent')).length
-  d.nodes = rawNodes.filter(n => n && n.type !== 'ai' && n.type !== 'agent').map(n => Object.assign({}, n))
+  d.nodes = rawNodes.filter(n => n && n.type !== 'ai' && n.type !== 'agent').map(n => {
+    const copy = Object.assign({}, n)
+    // 2.5.1 及以前的缩略图落盘副本：清掉缓存地址，渲染时直接读取原文件
+    if (copy.thumb && /thumbs-v2/i.test(String(copy.thumb))) copy.thumb = ''
+    return copy
+  })
   d.edges = (data.edges || []).filter(e => e && e.from && e.to && d.nodes.some(n => n.id === e.from) && d.nodes.some(n => n.id === e.to))
     .map(e => ({ id: e.id, from: e.from, to: e.to, kind: REL[e.kind] ? e.kind : 'flow', createdAt: e.createdAt || 0 }))
   d.removedSpecial = dropped

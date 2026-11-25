@@ -18,6 +18,67 @@ let forceClose = false
 
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = '1'
 
+/* ---------------- 纯 D 盘工作流：程序和所有运行数据都在程序目录旁 ---------------- */
+function ensureDir (dir) {
+  try { fs.mkdirSync(dir, { recursive: true }); return true } catch (_) { return false }
+}
+
+const APP_ROOT = app.isPackaged ? path.dirname(process.execPath) : __dirname
+const APP_DATA_ROOT = path.join(APP_ROOT, 'data')
+const APP_USER_DATA = path.join(APP_DATA_ROOT, 'app')
+
+ensureDir(APP_DATA_ROOT)
+ensureDir(APP_USER_DATA)
+app.setPath('userData', APP_USER_DATA)
+const APP_SESSION_DATA = path.join(APP_USER_DATA, 'session')
+ensureDir(APP_SESSION_DATA)
+try { app.setPath('sessionData', APP_SESSION_DATA) } catch (_) {}
+const APP_LOG_DIR = path.join(APP_DATA_ROOT, 'logs')
+ensureDir(APP_LOG_DIR)
+try { app.setPath('logs', APP_LOG_DIR) } catch (_) {}
+const APP_CRASH_DIR = path.join(APP_DATA_ROOT, 'crashDumps')
+ensureDir(APP_CRASH_DIR)
+try { app.setPath('crashDumps', APP_CRASH_DIR) } catch (_) {}
+
+function copyFileIfMissing (src, dst) {
+  try {
+    if (!fs.existsSync(src) || fs.existsSync(dst)) return true
+    fs.mkdirSync(path.dirname(dst), { recursive: true })
+    fs.copyFileSync(src, dst)
+    return true
+  } catch (_) { return false }
+}
+
+/* 首次切到 D 盘时，把旧版 C 盘里的设置、恢复文件、剪贴板数据搬过来；
+   缩略图缓存不搬，旧文档在渲染时自动回到原始文件路径。 */
+function migrateLegacyData () {
+  const legacy = path.join(app.getPath('appData'), 'IdeaCanvas')
+  // 旧版拖出替身放在系统 TEMP，一并清掉
+  try { fs.rmSync(path.join(app.getPath('temp'), 'IdeaCanvas-drag'), { recursive: true, force: true }) } catch (_) {}
+  if (legacy === APP_USER_DATA || !fs.existsSync(legacy)) return
+  let ok = true
+
+  ok = copyFileIfMissing(path.join(legacy, 'settings.json'), path.join(APP_USER_DATA, 'settings.json')) && ok
+  ok = copyFileIfMissing(path.join(legacy, 'recovery.cvproj'), path.join(APP_USER_DATA, 'recovery.cvproj')) && ok
+
+  try {
+    const clipSrc = path.join(legacy, 'clip')
+    const clipDst = path.join(APP_USER_DATA, 'clip')
+    if (fs.existsSync(clipSrc) && !fs.existsSync(clipDst)) fs.cpSync(clipSrc, clipDst, { recursive: true })
+  } catch (_) { ok = false }
+
+  try {
+    const oldNotes = path.join(legacy, 'data', '便签')
+    const newNotes = path.join(APP_DATA_ROOT, '便签')
+    if (fs.existsSync(oldNotes) && !fs.existsSync(newNotes)) fs.cpSync(oldNotes, newNotes, { recursive: true })
+  } catch (_) { ok = false }
+
+  // 全部搬完后再删旧目录，避免 C 盘继续留一份运行数据
+  if (ok) {
+    try { fs.rmSync(legacy, { recursive: true, force: true }) } catch (_) {}
+  }
+}
+
 // 这是个 2D 卡片工具，不需要独立 GPU 合成进程；牺牲一点动画流畅度换内存
 app.disableHardwareAcceleration()
 // GPU 进程并入主进程，空载再少一个约 90MB 的进程（软件合成足够这个小画布）
@@ -39,6 +100,8 @@ const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {
   app.quit()
 } else {
+  migrateLegacyData()
+
   app.on('second-instance', (_e, argv) => {
     const p = findProjectArg(argv)
     if (p && win) {
@@ -63,7 +126,6 @@ function boot () {
   if (argPath) pendingPath = argPath
   store.load()
   cleanDragTemp()
-  try { filesvc.pruneThumbs() } catch (_) {}
   createWindow()
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
 }
@@ -371,13 +433,8 @@ ipcMain.handle('clipboard:read-cards', async () => {
 
 /* ---------------- 便签落盘 ---------------- */
 function dataRoot () {
-  const base = app.isPackaged ? path.dirname(app.getPath('exe')) : __dirname
-  const dir = path.join(base, 'data')
-  try { fs.mkdirSync(dir, { recursive: true }); return dir } catch (_) {
-    const alt = path.join(app.getPath('userData'), 'data')
-    try { fs.mkdirSync(alt, { recursive: true }) } catch (_) {}
-    return alt
-  }
+  try { fs.mkdirSync(APP_DATA_ROOT, { recursive: true }) } catch (_) {}
+  return APP_DATA_ROOT
 }
 
 function noteRoot () {
@@ -443,7 +500,7 @@ ipcMain.handle('note:default-dir', () => ({ dir: noteRoot() }))
 
 /* ---------------- 工作模式：把卡片作为文件拖到其他软件 ---------------- */
 function dragTempRoot () {
-  const dir = path.join(app.getPath('temp'), 'IdeaCanvas-drag')
+  const dir = path.join(APP_DATA_ROOT, 'temp', 'drag')
   try { fs.mkdirSync(dir, { recursive: true }) } catch (_) {}
   return dir
 }

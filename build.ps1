@@ -6,6 +6,12 @@ $ver = (Get-Content (Join-Path $root 'package.json') -Raw | ConvertFrom-Json).ve
 Write-Output ("版本 " + $ver)
 
 Write-Output '1/6 清理旧产物'
+# 程序数据在 exe 旁的 data 目录；重建时先备份，避免升级把便签和设置删掉
+$preserve = Join-Path $root '.data-preserve'
+Remove-Item $preserve -Recurse -Force -ErrorAction SilentlyContinue
+if (Test-Path (Join-Path $out 'data')) {
+  Copy-Item (Join-Path $out 'data') $preserve -Recurse
+}
 Remove-Item (Join-Path $root 'dist') -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item (Join-Path $root 'build') -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force (Join-Path $root 'dist') | Out-Null
@@ -63,4 +69,9 @@ New-Item -ItemType Directory -Force (Join-Path $out 'assets') | Out-Null
 Copy-Item (Join-Path $root 'assets\cvproj.ico') (Join-Path $out 'assets\cvproj.ico') -Force
 
 Write-Output '6/6 完成'
+if (Test-Path $preserve) {
+  New-Item -ItemType Directory -Force (Join-Path $out 'data') | Out-Null
+  Copy-Item (Join-Path $preserve '*') (Join-Path $out 'data') -Recurse -Force
+  Remove-Item $preserve -Recurse -Force -ErrorAction SilentlyContinue
+}
 Get-Item (Join-Path $out 'IdeaCanvas.exe') | Select-Object Name,Length

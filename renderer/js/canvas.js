@@ -113,8 +113,9 @@ function iconHtml (n) {
 }
 
 function fileBody (n) {
-  if (n.kind === 'image' && n.thumb) {
-    return '<div class="node-thumb"><img class="lazy-thumb" data-src="' + n.thumb + '" alt="" decoding="async"></div>'
+  if (n.kind === 'image') {
+    const src = CC.U.thumbSrc(n)
+    if (src) return '<div class="node-thumb"><img class="lazy-thumb" data-src="' + src + '" alt="" decoding="async"></div>'
   }
   if (n.kind === 'pdf' || n.kind === 'cad' || n.kind === 'fem' || n.kind === 'model' || n.kind === 'other') {
     const extra = n.kind === 'pdf' ? (n.pages ? n.pages + ' 页' : '文档') : (n.kind === 'cad' ? 'CAD 图纸' : (n.kind === 'fem' ? '有限元文件' : (n.kind === 'model' ? '三维模型' : '文件')))

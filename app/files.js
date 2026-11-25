@@ -2,11 +2,10 @@
 /**
  * 文件元信息、系统图标、缩略图、文本抽取
  */
-const { app, nativeImage } = require('electron')
+const { app } = require('electron')
 const fs = require('fs')
 const fsp = fs.promises
 const path = require('path')
-const crypto = require('crypto')
 
 const KIND_BY_EXT = {}
 const KIND_LIST = {
@@ -25,30 +24,10 @@ for (const [kind, exts] of Object.entries(KIND_LIST)) for (const e of exts) KIND
 const TEXT_EXT = new Set(['txt', 'md', 'json', 'xml', 'log', 'ini', 'yml', 'yaml', 'csv', 'inp', 'dat', 'mac', 'out', 'ans', 'py', 'js', 'm', 'tex'])
 
 const iconCache = new Map()
-let thumbDir = null
 let pdfjs = null
 
 function extOf (p) { return (path.extname(p) || '').replace('.', '').toLowerCase() }
 function kindOf (p) { return KIND_BY_EXT[extOf(p)] || 'other' }
-
-function thumbDirPath () {
-  if (!thumbDir) {
-    thumbDir = path.join(app.getPath('userData'), 'thumbs-v2')
-    fs.mkdirSync(thumbDir, { recursive: true })
-  }
-  return thumbDir
-}
-
-function pruneThumbs (keep = 320) {
-  try {
-    const dir = thumbDirPath()
-    const files = fs.readdirSync(dir).map(f => {
-      const p = path.join(dir, f)
-      try { return { p, t: fs.statSync(p).mtimeMs } } catch (_) { return null }
-    }).filter(Boolean).sort((a, b) => b.t - a.t)
-    for (const f of files.slice(keep)) { try { fs.unlinkSync(f.p) } catch (_) {} }
-  } catch (_) {}
-}
 
 async function iconFor (p) {
   const ext = extOf(p) || '_'
@@ -131,19 +110,6 @@ async function imageDims (p, ext) {
     }
   } catch (_) {}
   return ''
-}
-
-async function makeThumb (p, stat) {
-  const key = crypto.createHash('sha1').update(p + '|' + stat.size + '|' + stat.mtimeMs).digest('hex').slice(0, 16)
-  const out = path.join(thumbDirPath(), key + '.jpg')
-  try { await fsp.access(out); return out } catch (_) {}
-  try {
-    // 只解码缩略图尺寸，避免把几十 MB 的原图整张读进内存
-    const img = await nativeImage.createThumbnailFromPath(p, { width: 360, height: 360 })
-    if (!img || img.isEmpty()) return ''
-    await fsp.writeFile(out, img.toJPEG(68))
-    return out
-  } catch (_) { return '' }
 }
 
 function stripXml (xml) {
@@ -283,7 +249,6 @@ async function describe (p, opts = {}) {
   if (kind === 'image') {
     try {
       out.dims = await imageDims(p, ext)
-      out.thumb = await makeThumb(p, stat)
     } catch (_) {}
   }
   if (ext === 'pdf') {
@@ -336,4 +301,4 @@ async function scanFolder (dir, cap = 800) {
   return found
 }
 
-module.exports = { describe, describeMany, extractText, scanFolder, kindOf, extOf, pdfText, pruneThumbs }
+module.exports = { describe, describeMany, extractText, scanFolder, kindOf, extOf, pdfText }

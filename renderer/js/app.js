@@ -435,7 +435,7 @@
         n.size = desc.size; n.mtime = desc.mtime; n.exists = desc.exists !== false
         n.icon = desc.icon || ''; n.snippet = desc.snippet || ''
         n.pages = desc.pages || 0; n.dims = desc.dims || ''
-        if (desc.thumb) n.thumb = U.fileUrl(desc.thumb)
+        n.thumb = desc.thumb ? U.fileUrl(desc.thumb) : ''
         CC.renderNode(n.id)
         CC.touch(true)
         CC.toast('已刷新：' + desc.name, 'ok')
@@ -542,7 +542,7 @@
     if (!n || n.type !== 'file') return
     const isImg = n.kind === 'image'
     const body = isImg
-      ? '<div class="prev-wrap"><img src="' + (n.thumb || U.fileUrl(n.path)) + '" alt=""></div>'
+      ? '<div class="prev-wrap"><img src="' + U.thumbSrc(n) + '" alt=""></div>'
       : '<div class="prev-text" id="prevText">正在读取…</div>'
     const modal = showModal({
       title: n.name,
@@ -569,7 +569,7 @@
       '<div class="ins-actions"><button class="btn" id="btnOpenNoteDir">打开便签目录</button><span id="noteDirMsg" style="font-size:11.5px;color:#8b90a3;align-self:center"></span></div>' +
       '<div class="ins-section" style="margin-top:22px">画布与文件</div>' +
       '<div class="set-row"><label>.cvproj 关联</label><div class="keyline"><span style="font-size:11.5px;color:#8b90a3">双击画布文件时用本程序打开，并显示专用画布图标</span><button class="btn" id="btnAssoc">注册关联与图标</button></div></div>' +
-      '<div class="set-hint" style="margin-left:0">画布文件只记录卡片位置、连线与便签，不包含文件内容本身。若资源管理器仍显示旧图标，重开一次窗口或重启资源管理器即可。</div>'
+      '<div class="set-hint" style="margin-left:0">画布文件只记录卡片位置、连线与便签，不包含文件内容本身；卡片文件按原目录引用，不会复制到程序目录。程序数据统一写在程序旁的 data 目录。</div>'
     const modal = showModal({
       title: '设置',
       body,
