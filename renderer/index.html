@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data:; img-src 'self' file: data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' file: data:;">
+<title>IdeaCanvas · 文件思路工作台</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrow-flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7C8BFF"></path>
+    </marker>
+    <marker id="arrow-ref" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8FA0C8"></path>
+    </marker>
+    <marker id="arrow-compare" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#F0A24C"></path>
+    </marker>
+    <marker id="arrow-check" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6EE0B4"></path>
+    </marker>
+    <marker id="arrow-feedback" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#EC6EA8"></path>
+    </marker>
+  </defs>
+</svg>
+
+<header id="topbar">
+  <div class="brand">
+    <div class="brand-mark">I</div>
+    <div class="brand-text"><b>IdeaCanvas</b><span>文件思路工作台 <i id="appVer">v2.5.1</i></span></div>
+  </div>
+  <div class="doc">
+    <span id="dirtyDot" class="dirty-dot" hidden></span>
+    <span id="docName" class="doc-name">未命名画布</span>
+    <span id="docMeta" class="doc-meta"></span>
+  </div>
+  <div class="spacer"></div>
+  <button class="tbtn" id="btnSave" title="保存画布（Ctrl+S）">保存</button>
+  <button class="tbtn" id="btnOpen" title="打开另一个画布（Ctrl+O）">打开</button>
+  <div class="winctl">
+    <button class="winbtn" data-win="min" title="最小化" aria-label="最小化">
+      <svg viewBox="0 0 16 16" width="12" height="12"><path d="M3.5 8h9" stroke="currentColor" stroke-width="1.6"/></svg>
+    </button>
+    <button class="winbtn" data-win="max" id="winMax" title="全屏 / 窗口（窗口为屏幕 3/4）" aria-label="全屏切换">
+      <svg viewBox="0 0 16 16" width="12" height="12"><rect x="3.6" y="3.6" width="8.8" height="8.8" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+    </button>
+    <button class="winbtn close" data-win="close" title="退出" aria-label="退出">
+      <svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6"/></svg>
+    </button>
+  </div>
+</header>
+
+<nav id="tabbar">
+  <div id="tabs"></div>
+  <button class="tab-new" id="btnNewTab" title="新建画布（Ctrl+N）">＋ 新画布</button>
+</nav>
+
+<div id="toolrail">
+  <button class="railbtn" id="btnImport" title="导入文件（Ctrl+I）">
+    <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M14 3v5h5M12 11v6M9.5 14.5l2.5 2.5 2.5-2.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+    <span>导入</span>
+  </button>
+  <button class="railbtn" id="btnFolder" title="导入整个文件夹（自动列出其中的文件）">
+    <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+    <span>目录</span>
+  </button>
+  <button class="railbtn" id="btnNote" title="新建便签（也可双击空白处）">
+    <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 9h8M8 12.5h8M8 16h5" stroke="currentColor" stroke-width="1.6"/></svg>
+    <span>便签</span>
+  </button>
+  <span class="rail-sep"></span>
+  <button class="railbtn" id="btnTidy" title="按连线关系自动整理布局">
+    <svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="4" width="6" height="6" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="4" y="14" width="6" height="6" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="14" width="6" height="6" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+    <span>整理</span>
+  </button>
+  <button class="railbtn" id="btnExport" title="导出画布为 PNG">
+    <svg viewBox="0 0 24 24"><path d="M12 4v11M8 11l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 19h14" stroke="currentColor" stroke-width="1.6"/></svg>
+    <span>导出</span>
+  </button>
+  <div class="rail-fill"></div>
+  <button class="railbtn" id="btnSettings" title="设置保存目录与偏好">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 3v2.5M12 18.5V21M4.2 7.5l2.1 1.2M17.7 15.3l2.1 1.2M4.2 16.5l2.1-1.2M17.7 8.7l2.1-1.2" stroke="currentColor" stroke-width="1.6"/></svg>
+    <span>设置</span>
+  </button>
+</div>
+
+<main id="stage">
+  <div id="world"><div id="nodes"></div></div>
+  <svg id="edges"></svg>
+  <svg id="labels"></svg>
+  <div id="marquee" hidden></div>
+
+  <div id="modeBadge" class="mode-badge" hidden>
+    <b>工作模式</b>
+    <span>长按卡片拖到其他软件 / 桌面 · 空格或右键移动画布 · 双击空白返回</span>
+    <button id="modeExit" title="返回梳理思路模式">返回梳理</button>
+  </div>
+</main>
+
+<div id="edgeHint" class="edge-hint" hidden>双击删除这条连线</div>
+
+  <div id="empty" class="empty">
+    <div class="empty-inner">
+      <div class="empty-kicker">LOCAL · OFFLINE · 文件思路</div>
+      <h1 class="empty-title">把文件拖进画布，<br>把想法连成一张图。</h1>
+      <p class="empty-sub">Word、Excel、PPT、PDF、图片、文本与设计文件，拖进来就是一张卡片。<br>四条边都能拉线，记录文件之间的先后、参考、对照与反馈。</p>
+      <div class="empty-steps">
+        <div class="step"><i>01</i><b>拖入文件</b><span>直接拖入，或点左侧「导入」</span></div>
+        <div class="step"><i>02</i><b>连线成图</b><span>四边圆点拖到目标卡片</span></div>
+        <div class="step"><i>03</i><b>写清思路</b><span>用便签记下创作顺序与理由</span></div>
+      </div>
+      <div class="empty-tip">双击空白＝进入工作模式 · 双击卡片＝用本机软件打开 · 滚轮缩放 · 空格拖动 · 右键双击卡片选连线起点</div>
+    </div>
+  </div>
+
+  <div id="hud-left" class="hud">
+    <button class="hbtn" id="zOut" title="缩小">−</button>
+    <button class="hbtn zoomval" id="zVal" title="点击恢复 100%">100%</button>
+    <button class="hbtn" id="zIn" title="放大">＋</button>
+    <button class="hbtn" id="zFit" title="适应全部内容">适应</button>
+    <span class="vsep"></span>
+    <button class="hbtn toggle" id="tGrid" title="显示网格">网格</button>
+    <button class="hbtn toggle" id="tSnap" title="拖拽吸附对齐">吸附</button>
+  </div>
+
+  <div id="hud-right" class="hud">
+    <div id="minimap"><canvas id="mmCanvas" width="208" height="132"></canvas><span class="mm-label">导航</span></div>
+  </div>
+</main>
+
+<aside id="inspector" hidden>
+  <div class="ins-head">
+    <span class="ins-title" id="insTitle">属性</span>
+    <button class="ins-close" id="insClose" title="关闭">✕</button>
+  </div>
+  <div class="ins-body" id="insBody"></div>
+</aside>
+
+<div id="toast" class="toast"></div>
+<div id="contextmenu" class="ctxmenu" hidden></div>
+<div id="modal-root" class="modal-root" hidden></div>
+
+<script src="js/core.js"></script>
+<script src="js/canvas.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
+

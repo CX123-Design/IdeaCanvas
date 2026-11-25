@@ -1,0 +1,24 @@
+{
+  "name": "ideacanvas",
+  "productName": "IdeaCanvas",
+  "version": "2.5.1",
+  "description": "本地文件思路画布 - 记录文件之间的创作关系",
+  "main": "main.js",
+  "author": "IdeaCanvas",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-packager . IdeaCanvas --platform=win32 --arch=x64 --out=dist --overwrite --asar --icon=assets/icon.ico --ignore=\"/dist|/_smoke|/_run.log|/_open.log|/_int.log|/_mm.log|/_smoke.log|/_e.log|/_p.log|/_s.log|/_smoke.png\""
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "pdfjs-dist": "3.11.174",
+    "resedit": "^3.1.1"
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.3.6",
+    "electron": "^33.2.0"
+  }
+}
+
+
