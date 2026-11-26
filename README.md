@@ -7,7 +7,7 @@
 前往 [Releases](https://github.com/CX123-Design/IdeaCanvas/releases/latest) 下载：
 
 ```text
-IdeaCanvas-2.5.3-便携版.zip
+IdeaCanvas-2.5.3-portable-win64.zip
 ```
 
 解压后双击 `IdeaCanvas.exe` 即可运行，不需要安装。整个 `IdeaCanvas-win32-x64` 文件夹一起使用，`data` 会自动生成在程序旁边。
@@ -65,3 +65,4 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File build.ps1
 ## 许可
 
 MIT
+
