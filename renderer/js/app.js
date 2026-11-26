@@ -281,7 +281,7 @@
     Doc.addNodes(batch)
     Doc.select(added.map(n => n.id))
     CC.touch(true)
-    if (!silent) CC.toast('已加入 ' + added.length + ' 张文件卡片' + (missing.length ? '，' + missing.length + ' 个路径不存在' : ''), 'ok')
+    if (!silent) CC.toast('已引用 ' + added.length + ' 个原文件（未复制）' + (missing.length ? '，' + missing.length + ' 个路径不存在' : ''), 'ok')
     return added
   }
   CC.addFilesAt = addFilesAt
