@@ -2,6 +2,7 @@ node_modules/
 dist/
 build/
 data/
+.data-preserve/
 *.log
 _smoke.png
 _smoke.json
